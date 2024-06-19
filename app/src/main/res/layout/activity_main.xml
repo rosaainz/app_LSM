@@ -18,14 +18,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Capturar Frase" />
+            android:text="Iniciar Captura" />
 
         <Button
             android:id="@+id/btnEndCapture"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Finalizar Frase" />
+            android:text="Finalizar Captura" />
     </LinearLayout>
 
     <androidx.camera.view.PreviewView

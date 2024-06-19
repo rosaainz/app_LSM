@@ -2,46 +2,27 @@ package com.uam.applsm
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.uam.applsm.ui.theme.AppLSMTheme
+import android.widget.Button
+import android.widget.Toast
 
 class MainActivity : ComponentActivity() {
+    //Elementos de la interfaz de usuario
+    private lateinit var btnCapture: Button
+    private lateinit var btnEndCapture: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            AppLSMTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                            name = "Ros",
-                            modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+        setContentView(R.layout.activity_main)
+
+        btnCapture = findViewById(R.id.btnCapture)
+        btnEndCapture = findViewById(R.id.btnEndCapture)
+
+        btnCapture.setOnClickListener {
+            Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
         }
-    }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-            text = "Hello $name!",
-            modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AppLSMTheme {
-        Greeting("Android")
+        btnEndCapture.setOnClickListener {
+            Toast.makeText(this, "Finalizar captura", Toast.LENGTH_SHORT).show()
+        }
     }
 }
