@@ -3,4 +3,5 @@
     <string name="finalizar_captura">Finalizar Captura</string>
     <string name="hola_mundo">Hola Mundo</string>
     <string name="iniciar_captura">Iniciar Captura</string>
+    <string name="cambiar_c_mara">Cambiar Cámara</string>
 </resources>

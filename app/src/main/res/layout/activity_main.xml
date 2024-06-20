@@ -17,18 +17,9 @@
         <Button
             android:id="@+id/btnCapture"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/iniciar_captura" />
-
-        <Button
-            android:id="@+id/btnEndCapture"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/finalizar_captura" />
     </LinearLayout>
 
     <androidx.camera.view.PreviewView
@@ -44,7 +35,6 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_alignParentBottom="true"
-        android:layout_weight="1"
         android:gravity="center"
         android:text="@string/hola_mundo"
         android:textSize="18sp" />
