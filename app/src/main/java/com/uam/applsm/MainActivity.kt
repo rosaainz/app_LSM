@@ -30,6 +30,8 @@ class MainActivity : ComponentActivity() {
         previewView = findViewById(R.id.previewView)
         textView = findViewById(R.id.textView)
 
+        textView.text = "frase"
+
         btnCapture.setOnClickListener {
             Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
         }
