@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val bitmap = imageToBitmap(image)
-                saveImage(bitmap)
+               // saveImage(bitmap)
                 sendImage(bitmap)
                 image.close()
             }
@@ -165,16 +165,22 @@ class MainActivity : ComponentActivity() {
     private fun sendImage(bitmap: Bitmap) {
         val client = OkHttpClient()
 
-        // Convertir el bitmap a un array de bytes en formato JPEG
+        // Convertir bitmap a un array de bytes en formato JPEG
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-        val requestBody = outputStream.toByteArray().toRequestBody(MEDIA_TYPE_JPEG)
+        val byteArray = outputStream.toByteArray()
 
+        // Rquest body de la imagen
+        val requestFile = byteArray.toRequestBody(MEDIA_TYPE_JPEG)
+        val multipartBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("image", "image.jpg", requestFile)
+            .build()
 
-        // Crear solicitud POST para enviar la imagen
+        // Solicitud POST para enviar la imagen
         val request = Request.Builder()
             .url(URL)
-            .post(requestBody)
+            .post(multipartBody)
             .header("Content-Type", "image/jpeg")
             .build()
 
@@ -186,6 +192,7 @@ class MainActivity : ComponentActivity() {
                     if (response.isSuccessful) {
                         val responseBody = response.body?.string()
                         Log.d("HTTP_POST", "Response: $responseBody")
+
                     } else {
                         Log.e("HTTP_POST", "Error en el servidor: ${response.code}")
                     }
