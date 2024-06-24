@@ -20,6 +20,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/iniciar_captura" />
+        <Button
+            android:id="@+id/btnEndCapture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fin_captura"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@id/btnCapture"
+            android:layout_margin="16dp" />
     </LinearLayout>
 
     <androidx.camera.view.PreviewView

@@ -33,6 +33,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 class MainActivity : ComponentActivity() {
     private lateinit var btnCapture: Button
+    private lateinit var btnEndCapture: Button
     private lateinit var previewView: PreviewView
     private lateinit var textView: TextView
     private var cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
@@ -40,12 +41,15 @@ class MainActivity : ComponentActivity() {
     private var imageCapture: ImageCapture? = null
     private val URL = "http://192.168.0.74:4000/predict"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
+    private val executor = Executors.newSingleThreadExecutor()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         btnCapture = findViewById(R.id.btnCapture)
+        btnEndCapture = findViewById(R.id.btnEndCapture)
         previewView = findViewById(R.id.previewView)
         textView = findViewById(R.id.textView)
 
@@ -55,6 +59,11 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Capturar lsm", Toast.LENGTH_SHORT).show()
             Log.d("MainActivity", "Botón 'Iniciar Captura' clickeado")
             capturePhoto()
+        }
+
+        btnEndCapture.setOnClickListener{
+            Toast.makeText(this,"Finalizar captura", Toast.LENGTH_SHORT).show()
+            Log.d("MainActivity", "Botón 'Finalizar Captura' clickeado")
         }
 
         // Permisos para la cámara

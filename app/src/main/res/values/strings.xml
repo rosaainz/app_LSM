@@ -5,4 +5,5 @@
     <string name="iniciar_captura">Iniciar Captura</string>
     <string name="cambiar_c_mara">Cambiar Cámara</string>
     <string name="frase">frase</string>
+    <string name="fin_captura">Fin Captura</string>
 </resources>
