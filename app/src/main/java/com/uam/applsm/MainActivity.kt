@@ -11,6 +11,8 @@ import android.graphics.YuvImage
 import android.media.Image
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -43,12 +45,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var textView: TextView
     private var cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
     private var cameraProvider: ProcessCameraProvider? = null
-    private var imageAnalysis: ImageAnalysis? = null
     private var imageCapture: ImageCapture? = null
     private val URL = "http://192.168.0.74:4000/predict"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
-    private val executor = Executors.newSingleThreadExecutor()
     private var capturing = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val captureInterval = 2000L // Intervalo de captura en milisegundos (2 segundos)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,14 +67,14 @@ class MainActivity : ComponentActivity() {
         btnCapture.setOnClickListener {
             Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
             Log.d("MainActivity", "Botón 'Iniciar Captura' clickeado")
-            capturePhoto()
-            //startCapture()
+            //capturePhoto()
+            startCapturing()
         }
 
         btnEndCapture.setOnClickListener{
             Toast.makeText(this,"Finalizar captura", Toast.LENGTH_SHORT).show()
             Log.d("MainActivity", "Botón 'Finalizar Captura' clickeado")
-            stopCapture()
+            stopCapturing()
         }
 
         // Permisos para la cámara
@@ -121,26 +123,11 @@ class MainActivity : ComponentActivity() {
             imageCapture = ImageCapture.Builder()
                 .build()
 
-            //Captura de fotograma
-            imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(executor) { image ->
-                        if (capturing) {
-                            processImage(image)
-                        }
-                        image.close()
-                    }
-                }
-
-
             try {
                 // Desvincular todas las cámaras previas antes de volver a unir
                 cameraProvider?.unbindAll()
 
                 // Vincular cámaras al ciclo de vida de la actividad
-               // cameraProvider?.bindToLifecycle(this, cameraSelector, preview,imageAnalysis)
                 cameraProvider?.bindToLifecycle(this, cameraSelector, preview, imageCapture)
 
             } catch (e: Exception) {
@@ -149,59 +136,53 @@ class MainActivity : ComponentActivity() {
             }
         }, ContextCompat.getMainExecutor(this))
     }
-    private fun startCapture(){
-        capturing = true
-    }
     private fun stopCapture(){
         capturing = false
     }
-    private fun processImage(image: ImageProxy) {
-        val bitmap = imageToBitmap(image)
-        if (bitmap != null) {
-            sendImage(bitmap)
-        } else {
-            Log.e(TAG, "Error al convertir la imagen a bitmap")
-        }
-        image.close()
+
+    private fun startCapturing() {
+        capturing = true
+        capturePhoto()
+    }
+
+    private fun stopCapturing() {
+        capturing = false
+        handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
+    }
+
+    private fun capturePhoto() {
+        if (!capturing) return
+
+        val imageCapture = imageCapture ?: return
+
+        imageCapture.takePicture(
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageCapturedCallback() {
+                override fun onCaptureSuccess(image: ImageProxy) {
+                    val bitmap = imageToBitmap(image)
+                    sendImage(bitmap)
+                    image.close()
+
+                    // Programar la próxima captura si aún estamos capturando
+                    if (capturing) {
+                        handler.postDelayed({ capturePhoto() }, captureInterval)
+                    }
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    exception.printStackTrace()
+                    // Intentar capturar de nuevo si hay un error, pero seguimos capturando
+                    if (capturing) {
+                        handler.postDelayed({ capturePhoto() }, captureInterval)
+                    }
+                }
+            })
     }
     private fun imageToBitmap(image: ImageProxy): Bitmap { //?
         val buffer = image.planes[0].buffer
         val bytes = ByteArray(buffer.capacity())
         buffer.get(bytes)
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
-//        return try {
-//            // Solo procesar imágenes en formato YUV_420_888
-//            if (image.format != ImageFormat.YUV_420_888) {
-//                Log.e(TAG, "Formato de imagen no compatible: ${image.format}")
-//                return null
-//            }
-//
-//            val yBuffer = image.planes[0].buffer // Y
-//            val uBuffer = image.planes[1].buffer // U
-//            val vBuffer = image.planes[2].buffer // V
-//
-//            val ySize = yBuffer.remaining()
-//            val uSize = uBuffer.remaining()
-//            val vSize = vBuffer.remaining()
-//
-//            val nv21 = ByteArray(ySize + uSize + vSize)
-//
-//            // Convertir YUV_420_888 a NV21
-//            yBuffer.get(nv21, 0, ySize)
-//            vBuffer.get(nv21, ySize, vSize)
-//            uBuffer.get(nv21, ySize + vSize, uSize)
-//
-//            val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-//            val out = ByteArrayOutputStream()
-//            yuvImage.compressToJpeg(android.graphics.Rect(0, 0, image.width, image.height), 100, out)
-//            val imageBytes = out.toByteArray()
-//
-//            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-//        } catch (e: Exception) {
-//            Log.e(TAG, "Error al convertir la imagen: ${e.message}")
-//            e.printStackTrace()
-//            null
-//        }
     }
 
     private fun sendImage(bitmap: Bitmap) {
@@ -256,21 +237,21 @@ class MainActivity : ComponentActivity() {
             Log.e("HTTP_POST", "Error: ${e.message}")
         }
     }
-    private fun capturePhoto() {
-        val imageCapture = imageCapture ?: return
-
-        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
-            override fun onCaptureSuccess(image: ImageProxy) {
-                val bitmap = imageToBitmap(image)
-               // saveImage(bitmap)
-                sendImage(bitmap)
-                image.close()
-            }
-            override fun onError(exception: ImageCaptureException) {
-                exception.printStackTrace()
-            }
-        })
-    }
+//    private fun capturePhoto() {
+//        val imageCapture = imageCapture ?: return
+//
+//        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
+//            override fun onCaptureSuccess(image: ImageProxy) {
+//                val bitmap = imageToBitmap(image)
+//               // saveImage(bitmap)
+//                sendImage(bitmap)
+//                image.close()
+//            }
+//            override fun onError(exception: ImageCaptureException) {
+//                exception.printStackTrace()
+//            }
+//        })
+//    }
     private fun saveImage(bitmap: Bitmap) {
         // Crear carpeta si no existe
         val folder = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "CapturedImages")
