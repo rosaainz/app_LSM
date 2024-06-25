@@ -35,6 +35,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.UUID
 import java.util.concurrent.Executors
 
 
@@ -49,8 +50,10 @@ class MainActivity : ComponentActivity() {
     private val URL = "http://192.168.0.74:4000/predict"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
+    private var captureCount = 0
+    private var maxCaptures = 3
     private val handler = Handler(Looper.getMainLooper())
-    private val captureInterval = 2000L // Intervalo de captura en milisegundos (2 segundos)
+    private val captureInterval = 1000L // Intervalo de captura en milisegundos (3 segundos)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -136,11 +139,8 @@ class MainActivity : ComponentActivity() {
             }
         }, ContextCompat.getMainExecutor(this))
     }
-    private fun stopCapture(){
-        capturing = false
-    }
-
     private fun startCapturing() {
+        captureCount = 0
         capturing = true
         capturePhoto()
     }
@@ -151,28 +151,33 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun capturePhoto() {
-        if (!capturing) return
+        if (!capturing || captureCount >= maxCaptures){
+            stopCapturing()
+            return
+        }
 
         val imageCapture = imageCapture ?: return
 
-        imageCapture.takePicture(
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    val bitmap = imageToBitmap(image)
-                    sendImage(bitmap)
-                    image.close()
+        Log.d("Count", "${captureCount}")
 
-                    // Programar la próxima captura si aún estamos capturando
-                    if (capturing) {
-                        handler.postDelayed({ capturePhoto() }, captureInterval)
-                    }
+        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                val bitmap = imageToBitmap(image)
+                sendImage(bitmap)
+                image.close()
+
+                captureCount++
+                Log.d("Count", "Count success: ${captureCount}")
+                // Programar la próxima captura si aún estamos capturando
+                if (capturing && captureCount < maxCaptures) {
+                    handler.postDelayed({ capturePhoto() }, captureInterval)
                 }
+            }
 
                 override fun onError(exception: ImageCaptureException) {
                     exception.printStackTrace()
                     // Intentar capturar de nuevo si hay un error, pero seguimos capturando
-                    if (capturing) {
+                    if (capturing && captureCount < maxCaptures) {
                         handler.postDelayed({ capturePhoto() }, captureInterval)
                     }
                 }
@@ -184,6 +189,10 @@ class MainActivity : ComponentActivity() {
         buffer.get(bytes)
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
     }
+    fun generateUniqueFileName(): String {
+        val uuid = UUID.randomUUID().toString()
+        return "image_$uuid.jpg"
+    }
 
     private fun sendImage(bitmap: Bitmap) {
         val client = OkHttpClient()
@@ -192,12 +201,6 @@ class MainActivity : ComponentActivity() {
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
         val byteArray = outputStream.toByteArray()
-
-        //verificar que el bitmap  no este vacio
-        if (byteArray.isEmpty()) {
-            Log.e(TAG, "Error: byteArray está vacío")
-            return
-        }
 
         // Rquest body de la imagen
         val requestFile = byteArray.toRequestBody(MEDIA_TYPE_JPEG)
