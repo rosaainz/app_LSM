@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.YuvImage
 import android.media.Image
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
@@ -31,10 +32,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.Executors
 
@@ -51,9 +55,10 @@ class MainActivity : ComponentActivity() {
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
     private var captureCount = 0
-    private var maxCaptures = 3
+    private var maxCaptures = 6
     private val handler = Handler(Looper.getMainLooper())
-    private val captureInterval = 1000L // Intervalo de captura en milisegundos (3 segundos)
+    private val captureInterval = 500L // milisegundos
+    private val responses = mutableListOf<JSONObject>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +107,6 @@ class MainActivity : ComponentActivity() {
     }
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-
         cameraProviderFuture.addListener({
             cameraProvider = cameraProviderFuture.get()
             bindCameraUseCases()
@@ -148,6 +152,14 @@ class MainActivity : ComponentActivity() {
     private fun stopCapturing() {
         capturing = false
         handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
+        if(responses.size == maxCaptures){
+            Log.d("Responses", "responses list: ${responses}")
+            val result = processResponses(responses)
+            Log.d("Result Class", "result processResponses ${result}")
+            runOnUiThread{
+                textView.text = result
+            }
+        }
     }
 
     private fun capturePhoto() {
@@ -189,10 +201,6 @@ class MainActivity : ComponentActivity() {
         buffer.get(bytes)
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
     }
-    fun generateUniqueFileName(): String {
-        val uuid = UUID.randomUUID().toString()
-        return "image_$uuid.jpg"
-    }
 
     private fun sendImage(bitmap: Bitmap) {
         val client = OkHttpClient()
@@ -206,7 +214,7 @@ class MainActivity : ComponentActivity() {
         val requestFile = byteArray.toRequestBody(MEDIA_TYPE_JPEG)
         val multipartBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("image", "image.jpg", requestFile)
+            .addFormDataPart("image", "image_$captureCount.jpg", requestFile)
             .build()
 
         // Solicitud POST para enviar la imagen
@@ -224,12 +232,19 @@ class MainActivity : ComponentActivity() {
                     if (response.isSuccessful) {
                         val responseBody = response.body?.string()
                         Log.d("HTTP_POST", "Response: $responseBody")
-
+                        responseBody?.let {
+                            val jsonResponse = JSONObject(it)
+                            synchronized(responses) {
+                                responses.add(jsonResponse)
+                                if (responses.size == maxCaptures) {
+                                    stopCapturing()
+                                }
+                            }
+                        }
                     } else {
                         Log.e("HTTP_POST", "Error en el servidor: ${response.code}")
                     }
                 }
-
                 override fun onFailure(call: Call, e: IOException) {
                     e.printStackTrace()
                     Log.e("HTTP_POST", "Error al hacer la solicitud al servidor: ${e.message}")
@@ -240,40 +255,19 @@ class MainActivity : ComponentActivity() {
             Log.e("HTTP_POST", "Error: ${e.message}")
         }
     }
-//    private fun capturePhoto() {
-//        val imageCapture = imageCapture ?: return
-//
-//        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
-//            override fun onCaptureSuccess(image: ImageProxy) {
-//                val bitmap = imageToBitmap(image)
-//               // saveImage(bitmap)
-//                sendImage(bitmap)
-//                image.close()
-//            }
-//            override fun onError(exception: ImageCaptureException) {
-//                exception.printStackTrace()
-//            }
-//        })
-//    }
-    private fun saveImage(bitmap: Bitmap) {
-        // Crear carpeta si no existe
-        val folder = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "CapturedImages")
-        if (!folder.exists()) {
-            folder.mkdirs()
+    private fun processResponses(responses: List<JSONObject>): String {
+        val classCount = mutableMapOf<String, Int>()
+        val classProbs = mutableMapOf<String, Double>()
+
+        for (response in responses) {
+            val bodyLanguageClass = response.getString("body_language_class")
+            val bodyLanguageProbArray  = response.getJSONArray("body_language_prob")
+            val bodyLanguageProb = bodyLanguageProbArray.getDouble(0)
+
+            classCount[bodyLanguageClass] =(classCount[bodyLanguageClass] ?: 0) + 1
+            classProbs[bodyLanguageClass] = maxOf(classProbs[bodyLanguageClass] ?: 0.0, bodyLanguageProb)
         }
 
-        // Guardar imagen en la carpeta
-        val fileName = "IMG_${System.currentTimeMillis()}.jpg"
-        val file = File(folder, fileName)
-        try {
-            val outputStream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            Log.d("MainActivity", "Imagen guardada: ${file.absolutePath}")
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Log.e("MainActivity", "Error al guardar la imagen: ${e.message}")
-        }
+        return classCount.maxByOrNull { it.value }?.key ?: "Unknown"
     }
 }
