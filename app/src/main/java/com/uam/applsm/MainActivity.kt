@@ -248,16 +248,28 @@ class MainActivity : ComponentActivity() {
                         }
                     } else {
                         Log.e("HTTP_POST", "Error en el servidor: ${response.code}")
+                        // Si la respuesta no es exitosa (código 200), intentar capturar de nuevo
+                        if (capturing && captureCount < maxCaptures) {
+                            handler.postDelayed({ capturePhoto() }, captureInterval)
+                        }
                     }
                 }
                 override fun onFailure(call: Call, e: IOException) {
                     e.printStackTrace()
                     Log.e("HTTP_POST", "Error al hacer la solicitud al servidor: ${e.message}")
+                    // Si falla la solicitud, intentar capturar de nuevo
+                    if (capturing && captureCount < maxCaptures) {
+                        handler.postDelayed({ capturePhoto() }, captureInterval)
+                    }
                 }
             })
         } catch (e: IOException) {
             e.printStackTrace()
             Log.e("HTTP_POST", "Error: ${e.message}")
+            // Si hay un error en la solicitud, intentar capturar de nuevo
+            if (capturing && captureCount < maxCaptures) {
+                handler.postDelayed({ capturePhoto() }, captureInterval)
+            }
         }
     }
     private fun processResponses(responses: List<JSONObject>): String {
