@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
         btnCapture.setOnClickListener {
             Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
             Log.d("MainActivity", "Botón 'Iniciar Captura' clickeado")
-            //capturePhoto()
+            responses.clear()
             startCapturing()
         }
 
@@ -101,7 +101,10 @@ class MainActivity : ComponentActivity() {
         //val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         //StrictMode.setThreadPolicy(policy)
     }
-
+    override fun onStart() {
+        super.onStart()
+        startCamera()
+    }
     override fun onStop() {
         super.onStop()
         cameraProvider?.unbindAll()
