@@ -55,10 +55,11 @@ class MainActivity : ComponentActivity() {
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
     private var captureCount = 0
-    private var maxCaptures = 6
+    private var maxCaptures = 3
     private val handler = Handler(Looper.getMainLooper())
     private val captureInterval = 500L // milisegundos
     private val responses = mutableListOf<JSONObject>()
+    private var totalModels = 11
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,7 +153,7 @@ class MainActivity : ComponentActivity() {
     private fun stopCapturing() {
         capturing = false
         handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
-        if(responses.size == maxCaptures){
+        if(responses.size == maxCaptures*totalModels){
             Log.d("Responses", "responses list: ${responses}")
             val result = processResponses(responses)
             Log.d("Result Class", "result processResponses ${result}")
@@ -179,7 +180,7 @@ class MainActivity : ComponentActivity() {
                 image.close()
 
                 captureCount++
-                Log.d("Count", "Count success: ${captureCount}")
+                Log.d("Count", "COUNT SUCCESS: ${captureCount}")
                 // Programar la próxima captura si aún estamos capturando
                 if (capturing && captureCount < maxCaptures) {
                     handler.postDelayed({ capturePhoto() }, captureInterval)
@@ -233,10 +234,14 @@ class MainActivity : ComponentActivity() {
                         val responseBody = response.body?.string()
                         Log.d("HTTP_POST", "Response: $responseBody")
                         responseBody?.let {
-                            val jsonResponse = JSONObject(it)
+                            val jsonArrayResponse = JSONArray(it)
                             synchronized(responses) {
-                                responses.add(jsonResponse)
-                                if (responses.size == maxCaptures) {
+                                for (i in 0 until jsonArrayResponse.length()) {
+                                    val jsonResponse = jsonArrayResponse.getJSONObject(i)
+                                    responses.add(jsonResponse)
+                                }
+                                Log.d("RESPONSE", "RESPONSES SIZE: ${responses.size}, MAX_CAPTURES: ${maxCaptures}")
+                                if (responses.size == maxCaptures*totalModels) {
                                     stopCapturing()
                                 }
                             }
@@ -268,6 +273,9 @@ class MainActivity : ComponentActivity() {
             classProbs[bodyLanguageClass] = maxOf(classProbs[bodyLanguageClass] ?: 0.0, bodyLanguageProb)
         }
 
-        return classCount.maxByOrNull { it.value }?.key ?: "Unknown"
+        val maxClass = classCount.maxByOrNull { it.value }?.key ?: "Unknown"
+        val maxProb = classProbs.maxByOrNull { it.value }?.key ?: "Unknown"
+
+        return maxClass.takeIf { classCount[maxClass]!! >= classCount[maxProb]!! } ?: maxProb
     }
 }
