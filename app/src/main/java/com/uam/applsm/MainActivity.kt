@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
     private var captureCount = 0
-    private var maxCaptures = 3
+    private var maxCaptures = 10
     private val handler = Handler(Looper.getMainLooper())
     private val captureInterval = 500L // milisegundos
     private val responses = mutableListOf<JSONObject>()
@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
         previewView = findViewById(R.id.previewView)
         textView = findViewById(R.id.textView)
 
-        textView.text = "frase"
+        textView.text = ""
 
         btnCapture.setOnClickListener {
             Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
@@ -156,13 +156,11 @@ class MainActivity : ComponentActivity() {
     private fun stopCapturing() {
         capturing = false
         handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
-        if(responses.size == maxCaptures*totalModels){
-            Log.d("Responses", "responses list: ${responses}")
-            val result = processResponses(responses)
-            Log.d("Result Class", "result processResponses ${result}")
-            runOnUiThread{
-                textView.text = result
-            }
+        Log.d("Responses", "responses list: ${responses}")
+        val result = processResponses(responses)
+        Log.d("Result Class", "result processResponses ${result}")
+        runOnUiThread{
+            textView.text = result
         }
     }
 
@@ -276,21 +274,28 @@ class MainActivity : ComponentActivity() {
         }
     }
     private fun processResponses(responses: List<JSONObject>): String {
+        Log.d(
+            "RESPONSES LIST",
+            "responses list in processResponses: ${responses}"
+        )
         val classCount = mutableMapOf<String, Int>()
         val classProbs = mutableMapOf<String, Double>()
 
+        // body_language_class más frecuentes
         for (response in responses) {
             val bodyLanguageClass = response.getString("body_language_class")
-            val bodyLanguageProbArray  = response.getJSONArray("body_language_prob")
+            val bodyLanguageProbArray = response.getJSONArray("body_language_prob")
             val bodyLanguageProb = bodyLanguageProbArray.getDouble(0)
 
-            classCount[bodyLanguageClass] =(classCount[bodyLanguageClass] ?: 0) + 1
-            classProbs[bodyLanguageClass] = maxOf(classProbs[bodyLanguageClass] ?: 0.0, bodyLanguageProb)
+            classCount[bodyLanguageClass] = (classCount[bodyLanguageClass] ?: 0) + 1
+            classProbs[bodyLanguageClass] =
+                maxOf(classProbs[bodyLanguageClass] ?: 0.0, bodyLanguageProb)
         }
+        val maxClasses = classCount
+            .filter { it.value == classCount.values.maxOrNull() }
+            .keys.toList()
 
-        val maxClass = classCount.maxByOrNull { it.value }?.key ?: "Unknown"
-        val maxProb = classProbs.maxByOrNull { it.value }?.key ?: "Unknown"
-
-        return maxClass.takeIf { classCount[maxClass]!! >= classCount[maxProb]!! } ?: maxProb
+        val sortedMaxClasses = maxClasses.sortedByDescending { classProbs[it] }
+        return sortedMaxClasses.firstOrNull() ?: "Unknown"
     }
 }
