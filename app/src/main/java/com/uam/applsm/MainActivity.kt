@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
     //private val URL = "http://192.168.0.74:4000/upload"
-    private val URL = "http://192.168.1.210:4000/upload"
+    private val URL = "http://192.168.1.210:4000/"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
     private var captureCount = 0
@@ -64,10 +64,15 @@ class MainActivity : ComponentActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val captureInterval = 500L // milisegundos
     private val responses = mutableListOf<JSONObject>()
-    private var totalModels = 11
     private var successCount = 0
     private var fraseParts = 3 //partes de la frase
     private var countFrase = 0
+    private var ruta = ""
+    private var endpointTemp = "processTemporalidad"
+    private var endpointLocalizacion = "processLocalizacion"
+    private var endpointIntensidad = "processIntensidad"
+    private val results = mutableListOf<String>()
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -163,15 +168,17 @@ class MainActivity : ComponentActivity() {
     private fun stopCapturing() {
         capturing = false
         handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
-        Log.d("Responses", "responses list: ${responses}")
-        //val result = processResponses(responses)
-        //Log.d("Result Class", "result processResponses ${result}")
         runOnUiThread{
             //textView.text = result
             Log.d("countFrase", "countFrase antes del if: ${countFrase}")
             if (successResponseCount == maxCaptures) {
                 countFrase++
                 Log.d("countFrase", "countFrase actualizada: ${countFrase}")
+                Log.d("Responses", "responses list: ${responses}")
+                val result = responses
+                results.add(result.toString())
+                // Imprimir la lista de respuestas
+                Log.d("Results", "Lista Total: ${results.joinToString("\n")}")
                 updateProgressBar()
             }
         }
@@ -231,8 +238,20 @@ class MainActivity : ComponentActivity() {
             .build()
 
         // Solicitud POST para enviar la imagen
+        when (countFrase) {
+            0 -> {
+                ruta = URL + endpointTemp
+            }
+            1 -> {
+                ruta = URL + endpointLocalizacion
+            }
+            2 -> {
+                ruta = URL + endpointIntensidad
+            }
+        }
+
         val request = Request.Builder()
-            .url(URL)
+            .url(ruta)
             .post(multipartBody)
             .header("Content-Type", "image/jpeg")
             .build()
