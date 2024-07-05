@@ -32,12 +32,14 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import android.util.Log
+import android.widget.ProgressBar
 import androidx.annotation.RequiresApi
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -46,20 +48,26 @@ import java.util.concurrent.Executors
 class MainActivity : ComponentActivity() {
     private lateinit var btnCapture: Button
     private lateinit var btnEndCapture: Button
+    private lateinit var progressBar: ProgressBar
     private lateinit var previewView: PreviewView
     private lateinit var textView: TextView
     private var cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
-    private val URL = "http://192.168.0.74:4000/predict"
+    //private val URL = "http://192.168.0.74:4000/upload"
+    private val URL = "http://192.168.1.210:4000/upload"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
     private var captureCount = 0
-    private var maxCaptures = 10
+    private var maxCaptures = 3 //indica el valor de capturas que se tomaran
+    private var successResponseCount = 0 // Contador de respuestas exitosas
     private val handler = Handler(Looper.getMainLooper())
     private val captureInterval = 500L // milisegundos
     private val responses = mutableListOf<JSONObject>()
     private var totalModels = 11
+    private var successCount = 0
+    private var fraseParts = 3 //partes de la frase
+    private var countFrase = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,6 +78,7 @@ class MainActivity : ComponentActivity() {
         btnEndCapture = findViewById(R.id.btnEndCapture)
         previewView = findViewById(R.id.previewView)
         textView = findViewById(R.id.textView)
+        progressBar = findViewById(R.id.progressBar)
 
         textView.text = ""
 
@@ -77,6 +86,8 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Capturar fotogramas", Toast.LENGTH_SHORT).show()
             Log.d("MainActivity", "Botón 'Iniciar Captura' clickeado")
             responses.clear()
+            successResponseCount = 0  // Resetear contador de éxitos
+            updateProgressBar()
             startCapturing()
         }
 
@@ -96,10 +107,6 @@ class MainActivity : ComponentActivity() {
         } else {
             startCamera()
         }
-
-        // Permitir operaciones de red en el hilo principal
-        //val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-        //StrictMode.setThreadPolicy(policy)
     }
     override fun onStart() {
         super.onStart()
@@ -157,22 +164,26 @@ class MainActivity : ComponentActivity() {
         capturing = false
         handler.removeCallbacksAndMessages(null) // Elimina todas las callbacks pendientes
         Log.d("Responses", "responses list: ${responses}")
-        val result = processResponses(responses)
-        Log.d("Result Class", "result processResponses ${result}")
+        //val result = processResponses(responses)
+        //Log.d("Result Class", "result processResponses ${result}")
         runOnUiThread{
-            textView.text = result
+            //textView.text = result
+            Log.d("countFrase", "countFrase antes del if: ${countFrase}")
+            if (successResponseCount == maxCaptures) {
+                countFrase++
+                Log.d("countFrase", "countFrase actualizada: ${countFrase}")
+                updateProgressBar()
+            }
         }
     }
 
     private fun capturePhoto() {
-        if (!capturing || captureCount >= maxCaptures){
+        if (!capturing || successResponseCount >= maxCaptures){
             stopCapturing()
             return
         }
 
         val imageCapture = imageCapture ?: return
-
-        Log.d("Count", "${captureCount}")
 
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
@@ -181,9 +192,9 @@ class MainActivity : ComponentActivity() {
                 image.close()
 
                 captureCount++
-                Log.d("Count", "COUNT SUCCESS: ${captureCount}")
+                Log.d("Count", "CAPTURE COUNT SUCCESS: ${captureCount}")
                 // Programar la próxima captura si aún estamos capturando
-                if (capturing && captureCount < maxCaptures) {
+                if (capturing && successResponseCount < maxCaptures) {
                     handler.postDelayed({ capturePhoto() }, captureInterval)
                 }
             }
@@ -191,7 +202,7 @@ class MainActivity : ComponentActivity() {
                 override fun onError(exception: ImageCaptureException) {
                     exception.printStackTrace()
                     // Intentar capturar de nuevo si hay un error, pero seguimos capturando
-                    if (capturing && captureCount < maxCaptures) {
+                    if (capturing && successResponseCount < maxCaptures) {
                         handler.postDelayed({ capturePhoto() }, captureInterval)
                     }
                 }
@@ -231,35 +242,54 @@ class MainActivity : ComponentActivity() {
         try {
             client.newCall(request).enqueue(object : Callback {
                 override fun onResponse(call: Call, response: Response) {
+                    Log.d("Response:", "response status: ${response.isSuccessful}")
                     if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        Log.d("HTTP_POST", "Response: $responseBody")
-                        responseBody?.let {
-                            val jsonArrayResponse = JSONArray(it)
-                            synchronized(responses) {
-                                for (i in 0 until jsonArrayResponse.length()) {
-                                    val jsonResponse = jsonArrayResponse.getJSONObject(i)
-                                    responses.add(jsonResponse)
+                        synchronized(responses) {
+                            try {
+                                val responseBody = response.body?.string()
+                                Log.d("HTTP_POST", "Response received: $responseBody")
+
+                                // Verificar si la respuesta es un objeto JSON
+                                val jsonObjectResponse = JSONObject(responseBody!!)
+
+                                if (jsonObjectResponse.has("msg")) {
+                                    // Es un objeto JSON con mensaje
+                                    responses.add(jsonObjectResponse)
+                                } else {
+                                    // Es un array JSON
+                                    val jsonArrayResponse = JSONArray(responseBody)
+                                    for (i in 0 until jsonArrayResponse.length()) {
+                                        val jsonResponse = jsonArrayResponse.getJSONObject(i)
+                                        responses.add(jsonResponse)
+                                    }
                                 }
-                                Log.d("RESPONSE", "RESPONSES SIZE: ${responses.size}, MAX_CAPTURES: ${maxCaptures}")
-                                if (responses.size == maxCaptures*totalModels) {
+                                successResponseCount++
+                                Log.d("RESPONSE", "RESPONSES SIZE: ${responses.size}, SuccessResponseCount: $successResponseCount")
+                                if (successResponseCount  == maxCaptures) {
                                     stopCapturing()
-                                }
+                                }else{}
+                                //if (responses.size == maxCaptures) {
+                                //    stopCapturing()
+                                //} else {
+                               // }
+                            } catch (e: JSONException) {
+                                Log.e("HTTP_POST", "Error al parsear JSON como JSONArray: ${e.message}")
                             }
                         }
                     } else {
                         Log.e("HTTP_POST", "Error en el servidor: ${response.code}")
-                        // Si la respuesta no es exitosa (código 200), intentar capturar de nuevo
-                        if (capturing && captureCount < maxCaptures) {
+                        // Si la respuesta no es exitosa, intentar capturar de nuevo
+                        if (capturing && successResponseCount < maxCaptures) {
                             handler.postDelayed({ capturePhoto() }, captureInterval)
                         }
                     }
                 }
+
                 override fun onFailure(call: Call, e: IOException) {
                     e.printStackTrace()
                     Log.e("HTTP_POST", "Error al hacer la solicitud al servidor: ${e.message}")
                     // Si falla la solicitud, intentar capturar de nuevo
-                    if (capturing && captureCount < maxCaptures) {
+                    if (capturing && successResponseCount < maxCaptures) {
                         handler.postDelayed({ capturePhoto() }, captureInterval)
                     }
                 }
@@ -268,11 +298,20 @@ class MainActivity : ComponentActivity() {
             e.printStackTrace()
             Log.e("HTTP_POST", "Error: ${e.message}")
             // Si hay un error en la solicitud, intentar capturar de nuevo
-            if (capturing && captureCount < maxCaptures) {
+            if (capturing && successResponseCount < maxCaptures) {
                 handler.postDelayed({ capturePhoto() }, captureInterval)
             }
         }
     }
+    private fun updateProgressBar() {
+        runOnUiThread {
+            // Actualiza la barra de progreso basado en el número de respuestas exitosas
+            val progress = (countFrase.toFloat() / fraseParts.toFloat() * 100).toInt()
+            Log.d("updateProgressBar", "progress : ${progress}")
+            progressBar.progress = progress
+        }
+    }
+
     private fun processResponses(responses: List<JSONObject>): String {
         Log.d(
             "RESPONSES LIST",
