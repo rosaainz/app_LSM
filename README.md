@@ -1,6 +1,6 @@
 # app_LSM
 
-## Tabla de Contenidoss
+## 📘 Tabla de Contenidoss
 1. [Descripción](#descripción)
 2. [Características](#características)
 3. [Requisitos Previos](#requisitos-previos)
@@ -10,11 +10,11 @@
 7. [Licencia](#licencia)
 8. [Contacto](#contacto)
 
-## Descripción
+## 📃 Descripción
 
 Esta aplicación fue desarrollada con el propósito de explorar la posible interpretación de la lengua de señas mexicana en el contexto de una consulta médica. Las señas detectadas corresponden a una lista de palabras específicas utilizadas para interpretar el dolor en términos de temporalidad, localización e intensidad.
 
-## Características
+## 📚 Características
 - **Interfaz Sencilla**: Diseño fácil e intuitivo con una única vista principal.
 - **Barra de Progreso**: 
 - **Captura de Imágenes**: Incluye dos botones para controlar la captura de imágenes:
@@ -24,7 +24,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
 - **Traducción Contextual**: La aplicación está optimizada para detectar señas relacionadas con el dolor, enfocándose en términos de temporalidad, localización e intensidad.
 
 
-## Requisitos Previos
+## ✏️ Requisitos Previos
 
 - Android Studio 14.0
 - JDK 34.0.0
@@ -35,7 +35,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
     python3 src/app.py
     ```
 
-## Instalación
+## ⚙️ Instalación
 
 1. Clona este repositorio:
     ```sh
@@ -47,7 +47,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
     File -> Open -> Selecciona el directorio del proyecto
     ```
    
-## Uso
+## 🤳 Uso
 
 1. Conecta tu dispositivo Android o inicia un emulador.
 2. Modifiicar la variable URL por tu dirección ip en los archivos MainActivity y network_securiry_config.xml
@@ -57,7 +57,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
     Run -> Run 'app'
     ```
 
-## Contribuir
+## 🙌 Contribuir
 
 ¡Las contribuciones son bienvenidas! Para contribuir, sigue estos pasos:
 
@@ -67,10 +67,10 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
 4. Haz push a la rama (`git push origin feature/nueva-funcionalidad`).
 5. Abre un Pull Request.
 
-## Licencia
+## ⚖️ Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
-## Contacto
+## 🐚 Contacto
 
 Si tienes alguna pregunta o sugerencia, por favor escribeme a través de www.linkedin.com/in/rosa-sainz-0b0b19212.
