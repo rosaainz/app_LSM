@@ -43,6 +43,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 
 
 class MainActivity : ComponentActivity() {
@@ -54,7 +55,7 @@ class MainActivity : ComponentActivity() {
     private var cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
-    //private val URL = "http://192.168.0.74:4000/upload"
+    //private val URL = "http://192.168.0.74:4000/"
     private val URL = "http://192.168.1.210:4000/"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType()
     private var capturing = false
@@ -63,7 +64,7 @@ class MainActivity : ComponentActivity() {
     private var successResponseCount = 0 // Contador de respuestas exitosas
     private val handler = Handler(Looper.getMainLooper())
     private val captureInterval = 500L // milisegundos
-    private val responses = mutableListOf<JSONObject>()
+    private val responses: MutableList<Map<String, Any>> = mutableListOf()
     private var successCount = 0
     private var fraseParts = 3 //partes de la frase
     private var countFrase = 0
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
     private var endpointLocalizacion = "processLocalizacion"
     private var endpointIntensidad = "processIntensidad"
     private val results = mutableListOf<String>()
+
 
 
 
@@ -263,38 +265,46 @@ class MainActivity : ComponentActivity() {
                 override fun onResponse(call: Call, response: Response) {
                     Log.d("Response:", "response status: ${response.isSuccessful}")
                     if (response.isSuccessful) {
-                        synchronized(responses) {
-                            try {
-                                val responseBody = response.body?.string()
-                                Log.d("HTTP_POST", "Response received: $responseBody")
+                        try {
+                            val responseBody = response.body?.string()
+                            Log.d("HTTP_POST", "Response received: $responseBody")
 
-                                // Verificar si la respuesta es un objeto JSON
-                                val jsonObjectResponse = JSONObject(responseBody!!)
+                            // Parsear la respuesta como un objeto JSON
+                            val jsonObjectResponse = JSONObject(responseBody!!)
 
-                                if (jsonObjectResponse.has("msg")) {
-                                    // Es un objeto JSON con mensaje
-                                    responses.add(jsonObjectResponse)
-                                } else {
-                                    // Es un array JSON
-                                    val jsonArrayResponse = JSONArray(responseBody)
-                                    for (i in 0 until jsonArrayResponse.length()) {
-                                        val jsonResponse = jsonArrayResponse.getJSONObject(i)
-                                        responses.add(jsonResponse)
-                                    }
-                                }
-                                successResponseCount++
-                                Log.d("RESPONSE", "RESPONSES SIZE: ${responses.size}, SuccessResponseCount: $successResponseCount")
-                                if (successResponseCount  == maxCaptures) {
-                                    stopCapturing()
-                                }else{}
-                                //if (responses.size == maxCaptures) {
-                                //    stopCapturing()
-                                //} else {
-                               // }
-                            } catch (e: JSONException) {
-                                Log.e("HTTP_POST", "Error al parsear JSON como JSONArray: ${e.message}")
+                            // Extraer los datos del JSON
+                            val bodyLanguageClass = jsonObjectResponse.getString("body_language_class")
+                            val bodyLanguageProbArray = jsonObjectResponse.getJSONArray("body_language_prob")
+                            val image = jsonObjectResponse.getString("image")
+                            val model = jsonObjectResponse.getString("model")
+
+                            // Crear un mapa para almacenar los datos
+                            val responseData = mapOf(
+                                "body_language_class" to bodyLanguageClass,
+                                "body_language_prob" to bodyLanguageProbArray,
+                                "image" to image,
+                                "model" to model
+                            )
+
+                            // Sincronizar el acceso a responses
+                            synchronized(responses) {
+                                responses.add(responseData)
                             }
+
+
+                            successResponseCount++
+                            Log.d("RESPONSE", "RESPONSES SIZE: ${responses.size}, SuccessResponseCount: $successResponseCount")
+                            if (successResponseCount  == maxCaptures) {
+                                stopCapturing()
+                            }else{}
+                            //if (responses.size == maxCaptures) {
+                            //    stopCapturing()
+                            //} else {
+                           // }
+                        } catch (e: JSONException) {
+                            Log.e("HTTP_POST", "Error al parsear JSON como JSONArray: ${e.message}")
                         }
+
                     } else {
                         Log.e("HTTP_POST", "Error en el servidor: ${response.code}")
                         // Si la respuesta no es exitosa, intentar capturar de nuevo
