@@ -16,13 +16,21 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
 
 ## 📚 Características
 - **Interfaz Sencilla**: Diseño fácil e intuitivo con una única vista principal.
-- **Barra de Progreso**: 
+- **Barra de Progreso**: Cuenta con una barra de progreso para ir capturando los 3 tipos de señas para poder formar la frase (temporalidad, localización/síntomas e intensidad)
+  ![barra1](./img/barraInicio.jpeg)
+  ![barra2](./img/barra50.jpeg)
+  ![barra3](./img/barra100.jpeg)
 - **Captura de Imágenes**: Incluye dos botones para controlar la captura de imágenes:
     - **Iniciar Captura**: Este botón inicia la captura de imágenes desde la cámara.
+      ![botonInicio](./img/botonInicio.jpeg)
     - **Finalizar Captura**: Este botón detiene la captura de imágenes.
-- **Interpretación de Señas**: Un cuadro de texto en la interfaz muestra la interpretación de las señas detectadas.
-- **Traducción Contextual**: La aplicación está optimizada para detectar señas relacionadas con el dolor, enfocándose en términos de temporalidad, localización e intensidad.
-
+      ![botonFin](./img/botonFin.jpeg)
+- **Traducción Contextual**: Cuadro de texto que muestra la frase generada con las señas detectadas. 
+  ![frase](./img/frase.jpeg)
+- **Señas que detecta**:
+  - Temporalidad: hoy, ayer, día, mes, año, a veces, semana, ayer en la noche, ahora, año pasado, aún, antier. 
+  - Localización/Síntomas: dolor de cabeza, gripe, dolor de pecho, estómago, garganta, apéndice, alergia, flemas, vómito, diarrea, mareo, tos. 
+  - Intensidad: sí, constante, más o menos, grave, no, débil.
 
 ## ✏️ Requisitos Previos
 
