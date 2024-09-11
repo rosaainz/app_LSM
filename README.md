@@ -52,7 +52,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
 
 2. Abre el proyecto en Android Studio:
     ```sh
-    File -> Open -> Selecciona el directorio del proyecto
+    File -> Open -> appLSM
     ```
    
 ## 🤳 Uso
@@ -62,7 +62,7 @@ Esta aplicación fue desarrollada con el propósito de explorar la posible inter
 3. Verificar que estas en la misma red tanto para el servidor como para la app
 4. Ejecuta la aplicación:
     ```sh
-    Run -> Run 'app'
+    Run -> Run 'MainActivity'
     ```
 
 ## 🙌 Contribuir
