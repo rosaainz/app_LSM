@@ -2,14 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permisos necesarios -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Permisos necesarios para la aplicación -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- Permiso para acceder a la cámara -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Permiso para acceder a internet -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/> <!-- Permiso para acceder al estado de la red -->
 
-    <!-- Características del hardware -->
-    <uses-feature android:name="android.hardware.camera.any" />
-    <uses-feature android:name="android.hardware.camera.front" />
+    <!-- Características del hardware que la aplicación utiliza -->
+    <uses-feature android:name="android.hardware.camera.any" /> <!-- Indica que la aplicación puede usar cualquier cámara disponible -->
+    <uses-feature android:name="android.hardware.camera.front" /> <!-- Indica que la aplicación requiere acceso a la cámara frontal -->
 
     <application
         android:allowBackup="true"
@@ -22,6 +22,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppLSM"
         tools:targetApi="31">
+
+        <!-- Declaración de la actividad principal de la aplicación -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
