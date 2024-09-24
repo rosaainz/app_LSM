@@ -49,8 +49,7 @@ class MainActivity : ComponentActivity() {
     private var imageCapture: ImageCapture? = null
 
     // URL del servidor API
-    private val URL = "http://direccion_ip:4000/"
-    //private val URL = "https://lsm-server.up.railway.app:4000/"
+    private val URL = "https://lsm-server.up.railway.app:4000/"
     private val MEDIA_TYPE_JPEG = "image/jpeg".toMediaType() // Tipo de medio para imágenes JPEG
 
     // Variables para manejar el estado de la captura
@@ -87,20 +86,20 @@ class MainActivity : ComponentActivity() {
             "ayer en la noche" to listOf("Ayer en la noche empecé con", "Desde ayer en la noche he notado que tengo"),
             "ahora" to listOf("Ahora mismo tengo", "En este momento noto que tengo"),
             "aun" to listOf("Aún tengo", "Aún experimento"),
-            "año pasado" to listOf("El año pasado tuve", "Durante el año pasado noté que tengo"),
+            "anio pasado" to listOf("El año pasado tuve", "Durante el año pasado noté que tengo"),
             "antier" to listOf("Antier empecé con", "Desde antier he notado que tengo")
         ),
         // Plantillas relacionadas con la localización/síntomas de los malestares
         "localizacion" to mapOf(
-            "cabeza" to listOf("dolor de cabeza", "presión en la cabeza"),
-            "pecho" to listOf("dolor en el pecho", "presión en el pecho"),
+            "dolor de cabeza" to listOf("dolor de cabeza", "presión en la cabeza"),
+            "dolor en el pecho" to listOf("dolor en el pecho", "presión en el pecho"),
             "gripe" to listOf("síntomas de gripe", "gripe"),
             "estomago" to listOf("dolor de estómago", "malestar estomacal"),
             "garganta" to listOf("dolor de garganta", "irritación en la garganta"),
             "apendice" to listOf("dolor en el apéndice", "molestia en el apéndice"),
             "alergia" to listOf("síntomas de alergia", "reacción alérgica"),
             "flemas" to listOf("acumulación de flemas", "flemas en la garganta"),
-            "vomitar" to listOf("vomito", "sensación de vómito"),
+            "vomito" to listOf("vomito", "sensación de vómito"),
             "diarrea" to listOf("diarrea", "episodios de diarrea"),
             "mareo" to listOf("mareo", "sensación de mareo"),
             "tos" to listOf("tos", "episodios de tos")
@@ -109,8 +108,8 @@ class MainActivity : ComponentActivity() {
         "intensidad" to mapOf(
             "mas o menos" to listOf("de forma más o menos intensa", "más o menos constante"),
             "constante" to listOf("de manera constante", "constantemente"),
-            "si" to listOf("sí, es bastante intenso", "sí, definitivamente es intenso"),
-            "no" to listOf("no es muy intenso", "no, no ha sido intenso"),
+            "si" to listOf("es bastante intenso", "definitivamente es intenso"),
+            "no" to listOf("no es muy intenso", "no ha sido intenso"),
             "grave" to listOf("de manera grave", "es bastante grave"),
             "debil" to listOf("de manera débil", "es bastante débil")
         )
